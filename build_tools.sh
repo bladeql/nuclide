@@ -11,6 +11,7 @@ set -e
 
 VVM_MAKEFILE=./src/vvmtool/Makefile
 COMPILE_SYS=$(uname)
+MAKE=make
 
 # Check how many cores/processors we should use for building
 if ! [ -x "$(command -v nproc)" ]
@@ -86,5 +87,5 @@ fi
 
 $MAKE -j $BUILD_PROC CC=$ENGINE_CC CXX=$ENGINE_CXX
 printf "Built vvmtool successfully.\n"
-cp -v vvmtool ../../bin/vvmtool
+cp -v vvmtool.exe ../../bin/vvmtool.exe
 printf "DONE. Built ALL components successfully.\n"

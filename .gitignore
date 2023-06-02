@@ -45,6 +45,7 @@ gangstawars/*
 nightfire/*
 *.ico
 src/engine/
+vvmtool/
 bin/
 valve/
 rewolf/

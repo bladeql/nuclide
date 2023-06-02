@@ -1,7 +1,7 @@
 #!/bin/sh
 SRCPATH="$( cd "$( dirname $(readlink -nf $0) )" && pwd )"
 
-if [ ! -f "$SRCPATH"/bin/worldspawn ]; then
+if [ ! -f "$SRCPATH"/bin/radiant ]; then
 	printf "Map editor is not present, please run build_editor.sh\n"
 	exit
 fi
@@ -9,9 +9,9 @@ fi
 cd "$SRCPATH"/bin 
 
 if [[ -z "${NUCLIDE_GDB}" ]]; then
-	./worldspawn ../ $*
+	./radiant ../ $*
 else
-	gdb --args ./worldspawn ../ $*
+	gdb --args ./radiant ../ $*
 fi
 
 

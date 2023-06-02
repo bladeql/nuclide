@@ -11,6 +11,7 @@ set -e
 
 FTE_MAKEFILE=./src/engine/engine/Makefile
 FTE_SVNDIR=./src/engine/.svn
+FTE_CFG=blade
 
 COMPILE_SYS=$(uname)
 COMPILE_OS=$(uname -o)
@@ -53,7 +54,11 @@ else
 	OUTPUT=./release
 fi
 
-if [ "$BUILD_SDL2" -eq 1 ]
+if [ "$COMPILE_OS" = "Msys" ]
+then
+	PLATFORM=win64
+	OUTPUT=$OUTPUT/fteglqw64.exe
+elif [ "$BUILD_SDL2" -eq 1 ]
 	then
 	PLATFORM=SDL2
 	OUTPUT=$OUTPUT/fteqw-glsdl2
@@ -78,9 +83,6 @@ else
 	then
 		PLATFORM=linux64
 		OUTPUT=$OUTPUT/fteqw-gl64
-	else
-		printf "Unsupported platform.\n"
-		exit
 	fi
 fi
 
@@ -135,7 +137,7 @@ then
 else
 	printf "Engine is NOT present, cloning...\n"
 	cd ./src/
-	git clone "https://vcs.vera-visions.com/tech/engine" engine
+	git clone "git@github.com:bladeql/fteqw.git" engine
 	cd ./engine/engine
 fi
 
@@ -151,23 +153,24 @@ then
 	printf "Built the static dependencies successfully.\n\n"
 fi
 
-$MAKE -j $BUILD_PROC CC=$ENGINE_CC CXX=$ENGINE_CXX $MAKETARGET CFLAGS=-DMULTITHREAD FTE_TARGET=$PLATFORM
-cp -v "$OUTPUT" ../../../bin/fteqw
+$MAKE -j $BUILD_PROC CC=$ENGINE_CC CXX=$ENGINE_CXX $MAKETARGET CFLAGS=-DMULTITHREAD FTE_TARGET=$PLATFORM FTE_CONFIG=$FTE_CFG
+cp -v "$OUTPUT" ../../../bin/blade.exe
 printf "Built the client engine successfully.\n\n"
 
-$MAKE -j $BUILD_PROC CC=$ENGINE_CC CXX=$ENGINE_CXX sv-dbg
-cp -v ./debug/fteqw-sv ../../../bin/fteqw-sv
-printf "Built the dedicated server successfully.\n\n"
+# $MAKE -j $BUILD_PROC CC=$ENGINE_CC CXX=$ENGINE_CXX sv-dbg
+# cp -v ./debug/fteqw-sv* ../../../bin/fteqw-sv
+# cp -v ./debug/fteqwsv* ../../../bin/fteqw-sv
+# printf "Built the dedicated server successfully.\n\n"
 
 $MAKE -j $BUILD_PROC CC=$ENGINE_CC CXX=$ENGINE_CXX qcc-rel
-cp -v ./release/fteqcc ../../../bin/fteqcc
+cp -v ./release/fteqcc.exe ../../../bin/fteqcc.exe
 printf "Built the QuakeC compiler successfully.\n\n"
 
 if [ "$BUILD_IMGTOOL" -eq 1 ]
 then
 	# Note: DOESN'T LIKE CLANG!
 	$MAKE -j $BUILD_PROC imgtool-rel
-	cp -v ./release/imgtool ../../../bin/imgtool
+	cp -v ./release/imgtool.exe ../../../bin/imgtool.exe
 	printf "Built the imgtool successfully.\n\n"
 fi
 
@@ -176,6 +179,7 @@ then
 	# Note: DOESN'T LIKE CLANG!
 	$MAKE -j $BUILD_PROC plugins-rel CFLAGS=-DGLQUAKE NATIVE_PLUGINS="hl2"
 	find ./release/ -name 'fteplug_hl2_*.so' -exec cp -prv '{}' '../../../bin/' ';'
+	find ./release/ -name 'fteplug_hl2_*.dll' -exec cp -prv '{}' '../../../bin/' ';'
 	printf "Built the Source Engine plugin successfully.\n\n"
 fi
 
@@ -183,6 +187,7 @@ if [ "$BUILD_QUAKE3" -eq 1 ]
 then
 	CC=$ENGINE_CC CXX=$ENGINE_CXX $MAKE -j $BUILD_PROC plugins-rel NATIVE_PLUGINS="quake3"
 	find ./release/ -name 'fteplug_quake3_*.so' -exec cp -prv '{}' '../../../bin/' ';'
+	find ./release/ -name 'fteplug_quake3_*.dll' -exec cp -prv '{}' '../../../bin/' ';'
 	printf "Built the Quake III plugin successfully.\n\n"
 fi
 
@@ -190,6 +195,7 @@ if [ "$BUILD_BULLET" -eq 1 ]
 then
 	CC=$ENGINE_CC CXX=$ENGINE_CXX $MAKE -j $BUILD_PROC plugins-rel NATIVE_PLUGINS="bullet"
 	find ./release/ -name 'fteplug_bullet_*.so' -exec cp -prv '{}' '../../../bin/' ';'
+	find ./release/ -name 'fteplug_bullet_*.dll' -exec cp -prv '{}' '../../../bin/' ';'
 	printf "Built the bullet plugin successfully.\n\n"
 fi
 
@@ -197,6 +203,7 @@ if [ "$BUILD_ODE" -eq 1 ]
 then
 	CC=$ENGINE_CC CXX=$ENGINE_CXX $MAKE -j $BUILD_PROC plugins-rel NATIVE_PLUGINS="ode"
 	find ./release/ -name 'fteplug_ode_*.so' -exec cp -prv '{}' '../../../bin/' ';'
+	find ./release/ -name 'fteplug_ode_*.dll' -exec cp -prv '{}' '../../../bin/' ';'
 	printf "Built the ode plugin successfully.\n\n"
 fi
 
@@ -204,6 +211,7 @@ if [ "$BUILD_FFMPEG" -eq 1 ]
 then
 	CC=$ENGINE_CC CXX=$ENGINE_CXX $MAKE -j $BUILD_PROC plugins-rel NATIVE_PLUGINS="ffmpeg"
 	find ./release/ -name 'fteplug_ffmpeg_*.so' -exec cp -prv '{}' '../../../bin/' ';'
+	find ./release/ -name 'fteplug_ffmpeg_*.dll' -exec cp -prv '{}' '../../../bin/' ';'
 	printf "Built the ffmpeg plugin successfully.\n\n"
 fi
 
