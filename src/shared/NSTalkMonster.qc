@@ -23,7 +23,7 @@ NSTalkMonster::NSTalkMonster(void)
 	m_flNextSentence = 0.0f;
 	m_iFlags = 0i;
 	m_eFollowingChain = __NULL__;
-	m_vecLastUserPos = [0,0,0];
+	m_vecLastUserPos = g_vec_null;
 	m_flChangePath = 0.0f;
 	m_flTraceTime = 0.0f;
 	m_flFollowSpeedChanged = 0.0f;
@@ -39,6 +39,7 @@ NSTalkMonster::NSTalkMonster(void)
 	m_talkStare = __NULL__;
 	m_talkSurvived = __NULL__;
 	m_talkWounded = __NULL__;
+	m_talkAlert = __NULL__;
 	m_talkPlayerAsk = __NULL__;
 	m_talkPlayerGreet = __NULL__;
 	m_talkPlayerIdle = __NULL__;
@@ -75,6 +76,15 @@ NSTalkMonster::HandleAnimEvent(float flTimeStamp, int iCode, string strData)
 
 #ifdef SERVER
 void
+NSTalkMonster::_Alerted(void)
+{
+	super::_Alerted();
+
+	if (m_talkAlert)
+		Sentence(m_talkAlert);
+}
+
+void
 NSTalkMonster::Save(float handle)
 {
 	super::Save(handle);
@@ -101,6 +111,7 @@ NSTalkMonster::Save(float handle)
 	SaveString(handle, "m_talkStare", m_talkStare);
 	SaveString(handle, "m_talkSurvived", m_talkSurvived);
 	SaveString(handle, "m_talkWounded", m_talkWounded);
+	SaveString(handle, "m_talkAlert", m_talkAlert);
 	SaveString(handle, "m_talkPlayerAsk", m_talkPlayerAsk);
 	SaveString(handle, "m_talkPlayerGreet", m_talkPlayerGreet);
 	SaveString(handle, "m_talkPlayerIdle", m_talkPlayerIdle);
@@ -178,6 +189,9 @@ NSTalkMonster::Restore(string strKey, string strValue)
 		break;
 	case "m_talkWounded":
 		m_talkWounded = ReadString(strValue);
+		break;
+	case "m_talkAlert":
+		m_talkAlert = ReadString(strValue);
 		break;
 	case "m_talkPlayerAsk":
 		m_talkPlayerAsk = ReadString(strValue);
@@ -670,6 +684,7 @@ NSTalkMonster::SendEntity(entity ePEnt, float flChanged)
 	SENDENTITY_ANGLE(angles[1], MONFL_CHANGED_ANGLES_Y)
 	SENDENTITY_ANGLE(angles[2], MONFL_CHANGED_ANGLES_Z)
 	SENDENTITY_SHORT(modelindex, MONFL_CHANGED_MODELINDEX)
+	SENDENTITY_BYTE(view_ofs[2], MONFL_CHANGED_MODELINDEX)
 	SENDENTITY_BYTE(solid, MONFL_CHANGED_SOLID)
 	SENDENTITY_BYTE(movetype, MONFL_CHANGED_FLAGS)
 	SENDENTITY_INT(flags, MONFL_CHANGED_FLAGS)
@@ -680,7 +695,8 @@ NSTalkMonster::SendEntity(entity ePEnt, float flChanged)
 	SENDENTITY_COORD(maxs[1], MONFL_CHANGED_SIZE)
 	SENDENTITY_COORD(maxs[2], MONFL_CHANGED_SIZE)
 	SENDENTITY_BYTE(frame, MONFL_CHANGED_FRAME)
-	SENDENTITY_FLOAT(skin, MONFL_CHANGED_SKIN)
+	SENDENTITY_FLOAT(skin, MONFL_CHANGED_SKINHEALTH)
+	SENDENTITY_FLOAT(health, MONFL_CHANGED_SKINHEALTH)
 	SENDENTITY_FLOAT(effects, MONFL_CHANGED_EFFECTS)
 	SENDENTITY_BYTE(m_iBody, MONFL_CHANGED_BODY)
 	SENDENTITY_FLOAT(scale, MONFL_CHANGED_SCALE)
@@ -732,7 +748,7 @@ NSTalkMonster::ProcessWordQue(void)
 
 	SentenceSample(m_pSentenceQue[m_iSentencePos].m_strSnd);
 
-	NSLog("^2NSEntity::^3ProcessWordQue^7: Speaking %s", m_pSentenceQue[m_iSentencePos].m_strSnd);
+	NSMonster_Log("^2NSEntity::^3ProcessWordQue^7: Speaking %s", m_pSentenceQue[m_iSentencePos].m_strSnd);
 	m_iSentencePos++;
 
 	if (m_iSentencePos == m_iSentenceCount) {
@@ -846,6 +862,7 @@ NSTalkMonster::ReceiveEntity(float flNew, float flChanged)
 	READENTITY_ANGLE(angles[1], MONFL_CHANGED_ANGLES_Y)
 	READENTITY_ANGLE(angles[2], MONFL_CHANGED_ANGLES_Z)
 	READENTITY_SHORT(modelindex, MONFL_CHANGED_MODELINDEX)
+	READENTITY_BYTE(view_ofs[2], MONFL_CHANGED_MODELINDEX)
 	READENTITY_BYTE(solid, MONFL_CHANGED_SOLID)
 	READENTITY_BYTE(movetype, MONFL_CHANGED_FLAGS)
 	READENTITY_INT(flags, MONFL_CHANGED_FLAGS)
@@ -856,7 +873,8 @@ NSTalkMonster::ReceiveEntity(float flNew, float flChanged)
 	READENTITY_COORD(maxs[1], MONFL_CHANGED_SIZE)
 	READENTITY_COORD(maxs[2], MONFL_CHANGED_SIZE)
 	READENTITY_BYTE(frame, MONFL_CHANGED_FRAME)
-	READENTITY_FLOAT(skin, MONFL_CHANGED_SKIN)
+	READENTITY_FLOAT(skin, MONFL_CHANGED_SKINHEALTH)
+	READENTITY_FLOAT(health, MONFL_CHANGED_SKINHEALTH)
 	READENTITY_FLOAT(effects, MONFL_CHANGED_EFFECTS)
 	READENTITY_BYTE(m_iBody, MONFL_CHANGED_BODY)
 	READENTITY_FLOAT(scale, MONFL_CHANGED_SCALE)
@@ -899,14 +917,14 @@ NSTalkMonster_ParseSentence(void)
 
 	if (ent) {
 		if (ent.classname != "NSTalkMonster" && ent.classname != "ambient_generic")
-		NSLog("^3 NSTalkMonster_ParseSentence ^7: Entity %d not a NSTalkMonster!", e);
+		NSMonster_Log("^3 NSTalkMonster_ParseSentence ^7: Entity %d not a NSTalkMonster!", e);
 		else {
 			targ = (NSTalkMonster)ent;
 			targ.Sentence(sentence);
-			NSLog("^3 NSTalkMonster_ParseSentence ^7: Entity %d saying %s", e, sentence);
+			NSMonster_Log("^3 NSTalkMonster_ParseSentence ^7: Entity %d saying %s", e, sentence);
 		}
 	} else {
-		NSLog("^3 NSTalkMonster_ParseSentence ^7: Entity %d not in PVS", e);
+		NSMonster_Log("^3 NSTalkMonster_ParseSentence ^7: Entity %d not in PVS", e);
 	}
 }
 #endif

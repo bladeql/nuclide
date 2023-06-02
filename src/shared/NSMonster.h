@@ -14,6 +14,15 @@
  * OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+var bool autocvar_ai_debugLogic = false;
+void
+_NSMonster_Log(string msg)
+{
+	if (autocvar_ai_debugLogic == true)
+		print(sprintf("%f %s\n", time, msg));
+}
+#define NSMonster_Log(...) _NSMonster_Log(sprintf(__VA_ARGS__))
+
 /**
 Bitfield enumeration for NSMonster its SendFlags field.
 
@@ -32,7 +41,7 @@ typedef enumflags
 	MONFL_CHANGED_FLAGS,
 	MONFL_CHANGED_SOLID,
 	MONFL_CHANGED_FRAME,
-	MONFL_CHANGED_SKIN,
+	MONFL_CHANGED_SKINHEALTH,
 	MONFL_CHANGED_MOVETYPE,
 	MONFL_CHANGED_EFFECTS,
 	MONFL_CHANGED_BODY,
@@ -223,49 +232,6 @@ Check their individual descriptions as to how you're supposed to approach them.
 */
 class NSMonster:NSNavAI
 {
-private:
-#ifdef SERVER
-	entity m_ssLast;
-	vector oldnet_velocity;
-	float m_flPitch;
-	int m_iFlags;
-	vector base_mins;
-	vector base_maxs;
-	float base_health;
-
-	/* sequences */
-	string m_strRouteEnded;
-	int m_iSequenceRemove;
-	int m_iSequenceState;
-	float m_flSequenceEnd;
-	float m_flSequenceSpeed;
-	vector m_vecSequenceAngle;
-	int m_iSequenceFlags;
-	movementState_t m_iMoveState;
-
-	int m_iTriggerCondition;
-	string m_strTriggerTarget;
-
-	/* model events */
-	float m_flBaseTime;
-
-	/* attack/alliance system */
-	entity m_eEnemy;
-	float m_flAttackThink;
-	monsterState_t m_iMState;
-	monsterState_t m_iOldMState;
-	vector m_vecLKPos; /* last-known pos */
-
-	/* see/hear subsystem */
-	float m_flSeeTime;
-	/* animation cycles */
-	float m_flAnimTime;
-
-	PREDICTED_VECTOR_N(view_ofs)
-
-	nonvirtual void _LerpTurnToEnemy(float);
-#endif
-
 public:
 	void NSMonster(void);
 
@@ -299,6 +265,14 @@ public:
 	virtual bool IsAlive(void);
 	/** Returns whether they are allied with the type in question */
 	virtual bool IsFriend(int);
+	/** Overridable: Called once, when the monster has died. */
+	virtual void HasBeenKilled(void);
+	/** Overridable: Called every time the monster is hurt, while still alive. */
+	virtual void HasBeenHit(void);
+	/* Overridable: Called when the monster was gibbed. */
+	virtual void HasBeenGibbed(void);
+	/* Overridable: Called when the monster has been alerted to threat. */
+	virtual void HasBeenAlerted(void);
 
 	/* see/hear subsystem */
 	/** Internal use only. Called every frame to simulate vision. */
@@ -316,6 +290,8 @@ public:
 	virtual float GetChaseSpeed(void);
 	/** Overridable: Returns the running speed in Quake units per second. */
 	virtual float GetRunSpeed(void);
+	/** Overridable: Returns the turning speed in euler-angle units per second. */
+	virtual float GetYawSpeed(void);
 
 	/* attack system */
 	/** Overridable: Called when they're drawing a weapon. */
@@ -384,12 +360,66 @@ public:
 #endif
 
 #ifdef CLIENT
-	nonvirtual void _RenderDebugViewCone();
 
 	/** overrides */
 	virtual void customphysics(void);
 	virtual float predraw(void);
 	virtual void ReceiveEntity(float,float);
+#endif
+
+private:
+
+#ifdef CLIENT
+	nonvirtual void _RenderDebugViewCone();
+#endif
+
+#ifdef SERVER
+	entity m_ssLast;
+	vector oldnet_velocity;
+	float m_flPitch;
+	int m_iFlags;
+	vector base_mins;
+	vector base_maxs;
+	float base_health;
+
+	/* sequences */
+	string m_strRouteEnded;
+	int m_iSequenceRemove;
+	int m_iSequenceState;
+	float m_flSequenceEnd;
+	float m_flSequenceSpeed;
+	vector m_vecSequenceAngle;
+	int m_iSequenceFlags;
+	movementState_t m_iMoveState;
+
+	int m_iTriggerCondition;
+	string m_strTriggerTarget;
+
+	/* model events */
+	float m_flBaseTime;
+
+	/* attack/alliance system */
+	entity m_eEnemy;
+	float m_flAttackThink;
+	monsterState_t m_iMState;
+	monsterState_t m_iOldMState;
+	vector m_vecLKPos; /* last-known pos */
+
+	/* see/hear subsystem */
+	float m_flSeeTime;
+	/* animation cycles */
+	float m_flAnimTime;
+
+	/* timer for keeping track of the target */
+	float m_flTrackingTime;
+
+	PREDICTED_VECTOR_N(view_ofs)
+
+	/* caching variables, don't save these */
+	float m_actIdle;
+
+	nonvirtual void _LerpTurnToEnemy(void);
+	virtual void _Alerted(void);
 #endif
 };
 
