@@ -227,7 +227,7 @@ NSProjectile::Touch(entity eToucher)
 		if (m_flDmgMultiplier >= 0.0)
 			damageVal *= m_flDmgMultiplier;
 
-		Damage_Apply(eToucher, owner, damageVal, WEAPON_NONE, DMG_BLUNT);
+		Damage_Apply(eToucher, owner, damageVal, 0, DMG_BLUNT);
 	}
 
 	if (m_bDetonateOnWorld) {
@@ -353,7 +353,7 @@ NSProjectile::_Explode(void)
 			flDamage *= m_flDmgMultiplier;
 
 		//print(sprintf("Damage: %d; Radius: %d\n", flDamage, flRadius));
-		Damage_Radius(origin, owner, flDamage, flRadius, TRUE, WEAPON_NONE);
+		Damage_Radius(origin, owner, flDamage, flRadius, TRUE, 0);
 	}
 
 	StartSoundDef(m_sndExplode, CHAN_VOICE, true);

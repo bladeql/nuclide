@@ -46,3 +46,7 @@ nightfire/*
 *.ico
 src/engine/
 bin/
+valve/
+rewolf/
+blade/
+
