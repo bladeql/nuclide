@@ -21,11 +21,11 @@ else
 fi
 
 
-if [ -f "$SRCPATH/bin/blade" ]; then
+if [ -f "$SRCPATH/bin/blade.exe" ]; then
 	if [ -z "$NUCLIDE_GDB" ]; then
-		./blade ${ADDITIONAL_ARGS} -basedir ../ ${MANIFEST} ${ARGUMENTS} 
+		./blade.exe ${ADDITIONAL_ARGS} -basedir ../ ${MANIFEST} ${ARGUMENTS} 
 	else
-		gdb --args ./blade ${ADDITIONAL_ARGS} -basedir ../ $*
+		gdb --args ./blade.exe ${ADDITIONAL_ARGS} -basedir ../ $*
 	fi
 else
 	printf "Engine is not present, please run build_engine.sh\n"
